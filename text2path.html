@@ -37,6 +37,7 @@ $('#theme').onchange=e=>{store.set('theme',e.target.value);theme()};mq.onchange=
 const FONT=/\.(woff2?|ttf|otf)$/i,FILE=/\.(svg|sb2|sb3|pmp|sprite2|sprite3)$/i,norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,''),
  ea=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'),et=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 // ---- leitura de atributos/estilos
+const num=v=>{const m=/-?\d*\.?\d+(?:e-?\d+)?/i.exec(v||'');return m?parseFloat(m[0]):null};
 const css=(el,p)=>{const m=new RegExp('(?:^|;)\\s*'+p+'\\s*:\\s*([^;]+)').exec(el.getAttribute('style')||'');return m?m[1].trim():null};
 const prop=(el,p)=>{for(let e=el;e&&e.getAttribute;e=e.parentNode){const v=css(e,p)||e.getAttribute(p);if(v)return v}return null};
 const own=e=>{const v=css(e,'font-family')||e.getAttribute('font-family');return v?v.split(',')[0].replace(/["']/g,'').trim():null};
