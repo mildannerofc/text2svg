@@ -1,0 +1,11 @@
+{
+  "name": "text2svg",
+  "version": "1.0.0",
+  "description": "Conversor de texto para SVG com fontes do Google, animações (GIF/Lottie) e múltiplos formatos de exportação",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve .",
+    "build": "mkdir -p dist && cp index.html code.html dist/"
+  },
+  "license": "MIT"
+}

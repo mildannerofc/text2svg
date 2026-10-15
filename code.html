@@ -1,0 +1,68 @@
+<!doctype html><html lang="pt-BR" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Código → SVG | Text2SVG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<style>
+:root{--bg:#e5e7eb;--card:#fff;--tx:#111827;--mut:#6b7280;--bd:#d1d5db;--ac:#2563eb;--in:#f9fafb}
+:root[data-theme=dark]{--bg:#0f1115;--card:#181b21;--tx:#eceff4;--mut:#9aa3b2;--bd:#2b303a;--ac:#3b82f6;--in:#12151a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--bd)}
+.logo{font-size:22px}.logo span{color:var(--ac)}a{color:var(--ac);text-decoration:none}
+main{display:grid;grid-template-columns:440px 1fr;gap:16px;padding:16px 24px;max-width:1500px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}h3{margin:0 0 8px;font-size:14px}
+input,select,textarea,button{background:var(--in);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:7px 9px;font:inherit}
+textarea{width:100%;height:260px;resize:vertical;font:13px/1.5 monospace;white-space:pre;tab-size:4}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+label.ck{flex-direction:row;align-items:center;color:var(--tx);font-size:13px}input[type=number],select{width:100%}
+button{cursor:pointer}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+#stage{min-height:300px;border-radius:8px;overflow:auto;padding:16px;border:1px solid var(--bd);background:repeating-conic-gradient(#bbb 0 25%,#ddd 0 50%) 0 0/20px 20px}
+#view svg{max-width:100%;height:auto;display:block;margin:auto}#st{color:var(--mut);font-size:12px;margin-top:6px}
+</style></head><body>
+<header><div><b class="logo">Text<span>2</span>SVG</b> <a href="index.html" style="margin-left:16px">Texto → SVG</a></div><select id="theme"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Escuro</option></select></header>
+<main><section>
+<div class="card"><h3>Código</h3><textarea id="code" spellcheck="false">function saudacao(nome) {
+  const msg = `Olá, ${nome}!`;
+  console.log(msg); // imprime no console
+  return msg.length > 10 ? true : false;
+}
+
+saudacao("mundo");</textarea></div>
+<div class="card"><h3>Opções</h3><div class="g">
+<label>Linguagem<select id="lang"></select></label><label>Tema do código<select id="th"><option value="onedark">One Dark</option><option value="onelight">One Light</option><option value="dracula">Dracula</option></select></label>
+<label>Tamanho da fonte<input type="number" id="fs" value="14"></label><label>Margem interna<input type="number" id="pad" value="24"></label>
+<label>Raio da borda<input type="number" id="rad" value="12"></label><div><label class="ck"><input type="checkbox" id="ln" checked>&nbsp;Números de linha</label><label class="ck"><input type="checkbox" id="ch" checked>&nbsp;Barra de janela</label></div></div></div>
+</section><section class="card"><h3>Pré-visualização</h3><div id="stage"><div id="view"></div></div>
+<div class="bar"><button class="pri" data-ex="svg">SVG</button><button data-ex="png">PNG</button><button data-ex="jpeg">JPEG</button><button data-ex="webp">WebP</button><button data-ex="copy">Copiar SVG</button></div><div id="st"></div></section></main>
+<script>
+const $=s=>document.querySelector(s),store={get:(k,d)=>{try{return JSON.parse(localStorage[k])}catch{return d}},set:(k,v)=>localStorage[k]=JSON.stringify(v)};
+const mq=matchMedia('(prefers-color-scheme:dark)');
+function theme(){const p=store.get('theme','auto');$('#theme').value=p;document.documentElement.dataset.theme=p==='auto'?(mq.matches?'dark':'light'):p}
+$('#theme').onchange=e=>{store.set('theme',e.target.value);theme()};mq.onchange=theme;theme();
+const LANGS="markup:HTML/XML,css:CSS,scss:SCSS,less:Less,javascript:JavaScript,typescript:TypeScript,jsx:JSX,tsx:TSX,python:Python,java:Java,c:C,cpp:C++,csharp:C#,go:Go,rust:Rust,php:PHP,ruby:Ruby,swift:Swift,kotlin:Kotlin,scala:Scala,dart:Dart,lua:Lua,perl:Perl,r:R,bash:Bash,powershell:PowerShell,batch:Batch,sql:SQL,json:JSON,yaml:YAML,toml:TOML,ini:INI,markdown:Markdown,docker:Dockerfile,makefile:Makefile,cmake:CMake,graphql:GraphQL,haskell:Haskell,elixir:Elixir,erlang:Erlang,clojure:Clojure,lisp:Lisp,scheme:Scheme,ocaml:OCaml,fsharp:F#,vbnet:VB.NET,objectivec:Objective-C,matlab:MATLAB,julia:Julia,groovy:Groovy,nim:Nim,zig:Zig,solidity:Solidity,gdscript:GDScript,glsl:GLSL,hlsl:HLSL,nasm:Assembly (NASM),verilog:Verilog,vhdl:VHDL,protobuf:Protobuf,hcl:HCL/Terraform,pascal:Pascal,fortran:Fortran,d:D,crystal:Crystal,coffeescript:CoffeeScript,pug:Pug,handlebars:Handlebars,twig:Twig,nginx:Nginx,diff:Diff,latex:LaTeX,regex:Regex,wasm:WebAssembly,csv:CSV,plain:Texto puro".split(',').map(s=>s.split(':'));
+$('#lang').innerHTML=LANGS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');$('#lang').value='javascript';
+const MAP={comment:'c',prolog:'c',doctype:'c',cdata:'c',punctuation:'p',property:'t',tag:'t',constant:'t',symbol:'t',deleted:'t',boolean:'n',number:'n',selector:'s','attr-name':'s',string:'s',char:'s',builtin:'s',inserted:'s',operator:'o',entity:'o',url:'o',variable:'v',atrule:'k','attr-value':'k',keyword:'k',function:'f','class-name':'f',regex:'r',important:'r'};
+const TH={onedark:{bg:'#282c34',fg:'#abb2bf',c:'#5c6370',p:'#abb2bf',t:'#e06c75',n:'#d19a66',s:'#98c379',o:'#56b6c2',v:'#e06c75',k:'#c678dd',f:'#61afef',r:'#d19a66'},
+onelight:{bg:'#fafafa',fg:'#383a42',c:'#a0a1a7',p:'#383a42',t:'#e45649',n:'#986801',s:'#50a14f',o:'#0184bc',v:'#e45649',k:'#a626a4',f:'#4078f2',r:'#986801'},
+dracula:{bg:'#282a36',fg:'#f8f8f2',c:'#6272a4',p:'#f8f8f2',t:'#ff79c6',n:'#bd93f9',s:'#f1fa8c',o:'#ff79c6',v:'#f8f8f2',k:'#ff79c6',f:'#50fa7b',r:'#ffb86c'}};
+function flat(a,key,out){a.forEach(t=>{if(typeof t==='string')return out.push([t,key]);const al=Array.isArray(t.alias)?t.alias:[t.alias],k=MAP[t.type]||al.map(x=>MAP[x]).find(Boolean)||key,c=t.content;flat(Array.isArray(c)?c:[c],k,out)})}
+const toLines=segs=>{const L=[[]];segs.forEach(([t,k])=>t.split('\n').forEach((p,i)=>{if(i)L.push([]);if(p)L[L.length-1].push([p,k])}));return L};
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let S;
+function make(){const code=$('#code').value.replace(/\r/g,'').replace(/\t/g,'    '),th=TH[$('#th').value],fs=+$('#fs').value||14,pad=+$('#pad').value||24,rad=+$('#rad').value||0,ln=$('#ln').checked,ch=$('#ch').checked,lh=fs*1.6,cw=fs*.6;
+ const g=Prism.languages[$('#lang').value],segs=[];flat(g?Prism.tokenize(code,g):[code],'fg',segs);const L=toLines(segs),mx=Math.max(1,...L.map(l=>l.reduce((a,[t])=>a+t.length,0)));
+ const gut=ln?String(L.length).length*cw+20:0,top=ch?40:0,W=Math.ceil(pad*2+gut+mx*cw),H=Math.ceil(pad*2+top+L.length*lh),ff="'JetBrains Mono','Fira Code',Menlo,Consolas,'DejaVu Sans Mono',monospace";
+ let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="${ff}" font-size="${fs}"><rect width="${W}" height="${H}" rx="${rad}" fill="${th.bg}"/>`;
+ if(ch)s+=['#ff5f56','#ffbd2e','#27c93f'].map((c,i)=>`<circle cx="${pad+i*20+6}" cy="22" r="6" fill="${c}"/>`).join('');
+ L.forEach((l,i)=>{const y=pad+top+i*lh+fs;if(ln)s+=`<text x="${pad+gut-12}" y="${y}" text-anchor="end" fill="${th.c}">${i+1}</text>`;
+  s+=`<text x="${pad+gut}" y="${y}" fill="${th.fg}" xml:space="preserve" style="white-space:pre">${l.map(([t,k])=>`<tspan fill="${th[k]}">${esc(t)}</tspan>`).join('')}</text>`});
+ return{svg:s+'</svg>',W,H,bg:th.bg}}
+function render(){const l=$('#lang').value,go=()=>{S=make();$('#view').innerHTML=S.svg;$('#st').textContent=`${new Blob([S.svg]).size} bytes`};
+ if(l==='plain'||Prism.languages[l])go();else Prism.plugins.autoloader.loadLanguages([l],go)}
+document.querySelectorAll('textarea,select:not(#theme),input[type=number],input[type=checkbox]').forEach(e=>e.oninput=render);
+const dl=(b,n)=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1e3)};
+const raster=(type,sc=3)=>new Promise(r=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=S.W*sc;c.height=S.H*sc;const x=c.getContext('2d');if(type==='image/jpeg'){x.fillStyle=S.bg;x.fillRect(0,0,c.width,c.height)}x.drawImage(i,0,0,c.width,c.height);c.toBlob(r,type,.95)};i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(S.svg)});
+document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=async()=>{const k=b.dataset.ex;
+ if(k==='svg')dl(new Blob([S.svg],{type:'image/svg+xml'}),'codigo.svg');else if(k==='copy'){await navigator.clipboard.writeText(S.svg);$('#st').textContent='SVG copiado'}
+ else dl(await raster('image/'+k),'codigo.'+(k==='jpeg'?'jpg':k))});
+render();
+</script></body></html>

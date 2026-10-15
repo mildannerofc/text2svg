@@ -1,0 +1,147 @@
+<!doctype html><html lang="pt-BR" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Text2SVG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+:root{--bg:#e5e7eb;--card:#fff;--tx:#111827;--mut:#6b7280;--bd:#d1d5db;--ac:#2563eb;--in:#f9fafb}
+:root[data-theme=dark]{--bg:#0f1115;--card:#181b21;--tx:#eceff4;--mut:#9aa3b2;--bd:#2b303a;--ac:#3b82f6;--in:#12151a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--bd)}
+.logo{font-size:22px}.logo span{color:var(--ac)}
+main{display:grid;grid-template-columns:420px 1fr;gap:16px;padding:16px 24px;max-width:1500px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+h3{margin:0 0 8px;font-size:14px}
+input,select,textarea,button,.btn{background:var(--in);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:7px 9px;font:inherit}
+textarea{width:100%;height:130px;resize:vertical}input[type=text],input:not([type]),#q,#key{width:100%;margin-bottom:6px}
+button,.btn{cursor:pointer}button.on,button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+input[type=color]{width:100%;height:34px;padding:2px}input[type=number]{width:100%}
+.tabs,.r,.bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+#list{max-height:170px;overflow:auto;border:1px solid var(--bd);border-radius:6px}
+.row{display:flex}.row button{border:0;border-bottom:1px solid var(--bd);border-radius:0;background:none}.row button:first-child{flex:1;text-align:left}
+#stage{min-height:360px;border-radius:8px;overflow:auto;padding:16px;border:1px solid var(--bd)}
+#stage.grid{background:repeating-conic-gradient(#bbb 0 25%,#ddd 0 50%) 0 0/20px 20px}#stage.light{background:#fff}#stage.dark{background:#111}
+#view svg{width:calc(var(--z,100)*1%);height:auto;display:block;margin:auto}
+#src{width:100%;height:160px;margin-top:8px;display:none;font:12px monospace}#st{color:var(--mut);font-size:12px}
+</style></head><body>
+<header><div><b class="logo">Text<span>2</span>SVG</b> <a href="code.html" style="margin-left:16px;color:var(--ac);text-decoration:none">Código → SVG</a></div><select id="theme"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Escuro</option></select></header>
+<main><section>
+<div class="card"><h3>Texto</h3><textarea id="txt" data-b>Digite seu texto aqui</textarea></div>
+<div class="card"><h3>Fonte: <span id="fname">carregando…</span></h3>
+<input id="q" placeholder="Buscar fonte…"><div class="tabs"><button data-tab="g" class="on">Google</button><button data-tab="s">Salvas</button><button data-tab="f">Favoritas</button></div>
+<div id="list"></div>
+<div class="r"><label class="btn" style="flex-direction:row;color:var(--tx)">Enviar fonte<input type="file" id="up" accept=".ttf,.otf,.woff" hidden></label><button id="save">Salvar fonte atual</button></div>
+<input id="key" placeholder="Chave da API do Google Fonts (opcional)"></div>
+<div class="card"><h3>Ajustes</h3><div class="g">
+<label>Cor<input type="color" id="col" value="#000000"></label><label>Fundo (GIF/JPEG)<input type="color" id="bg" value="#ffffff"></label>
+<label>Altura da linha %<input type="number" id="lh" value="100" data-b></label><label>Quebrar em (caracteres)<input type="number" id="wrap" value="50" data-b></label>
+<label>Alinhamento<select id="al" data-b><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
+<label>Efeito<select id="fx"><option value="none">Nenhum</option><option value="shadow">Sombra</option><option value="outline">Contorno</option></select></label></div></div>
+<div class="card"><h3>Animação</h3><div class="g">
+<label>Entrada (in)<select id="in"><option value="none" selected>Nenhuma</option><option value="fade">Fade</option><option value="up">Subir</option><option value="down">Descer</option><option value="zoom">Zoom</option><option value="spin">Girar</option></select></label>
+<label>Saída (out)<select id="out"><option value="none" selected>Nenhuma</option><option value="fade">Fade</option><option value="up">Subir</option><option value="down">Descer</option><option value="zoom">Zoom</option><option value="spin">Girar</option></select></label>
+<label>Loop<select id="loop"><option value="none">Nenhum</option><option value="pulse">Pulsar</option><option value="float">Flutuar</option><option value="wiggle">Balançar</option><option value="spin">Girar</option></select></label>
+<label>FPS (GIF)<input type="number" id="fps" value="20"></label>
+<label>Duração in (s)<input type="number" id="ind" value="0.8" step="0.1"></label><label>Pausa (s)<input type="number" id="hold" value="1.5" step="0.1"></label>
+<label>Duração out (s)<input type="number" id="outd" value="0.8" step="0.1"></label><label>Atraso por letra (s)<input type="number" id="stg" value="0.08" step="0.02"></label></div></div>
+</section><section class="card">
+<div class="bar"><b style="flex:1">Pré-visualização</b><span id="bgs" class="tabs"><button data-bg="grid" class="on">Grade</button><button data-bg="light">Claro</button><button data-bg="dark">Escuro</button></span><button id="zm">−</button><span id="zv" style="align-self:center">100%</span><button id="zp">+</button><button id="ss">Código</button></div>
+<div id="stage" class="grid"><div id="view"></div></div><textarea id="src" readonly></textarea>
+<div class="bar" id="ex"><button class="pri" data-ex="svg">SVG</button><button data-ex="png">PNG</button><button data-ex="jpeg">JPEG</button><button data-ex="webp">WebP</button><button data-ex="bmp">BMP</button><button data-ex="jsx">JSX</button><button data-ex="tsx">TSX</button><button data-ex="lottie">Lottie</button><button data-ex="gif">GIF</button></div><div id="st"></div>
+</section></main>
+<script>
+const $=s=>document.querySelector(s),S={tab:'g',z:100},E=x=>1-Math.pow(1-x,3);
+const store={get:(k,d)=>{try{return JSON.parse(localStorage[k])}catch{return d}},set:(k,v)=>localStorage[k]=JSON.stringify(v)};
+// tema
+const mq=matchMedia('(prefers-color-scheme:dark)');
+function theme(){const p=store.get('theme','auto');$('#theme').value=p;document.documentElement.dataset.theme=p==='auto'?(mq.matches?'dark':'light'):p}
+$('#theme').onchange=e=>{store.set('theme',e.target.value);theme()};mq.onchange=theme;theme();
+// IndexedDB (fontes salvas)
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('t2s',1);r.onupgradeneeded=()=>r.result.createObjectStore('f',{keyPath:'name'});r.onsuccess=()=>res(r.result);r.onerror=rej});
+const idbOp=async(m,...a)=>{const d=await idb();return new Promise((res,rej)=>{const q=d.transaction('f',m==='getAll'?'readonly':'readwrite').objectStore('f')[m](...a);q.onsuccess=()=>res(q.result);q.onerror=rej})};
+// fontes
+function useBuffer(buf,name){S.font=opentype.parse(buf);S.buf=buf;S.fname=name;$('#fname').textContent=name;build()}
+async function useUrl(u,n){useBuffer(await(await fetch(u)).arrayBuffer(),n)}
+$('#up').onchange=async e=>{const f=e.target.files[0];if(f)useBuffer(await f.arrayBuffer(),f.name.replace(/\.\w+$/,''))};
+$('#save').onclick=async()=>{if(S.buf){await idbOp('put',{name:S.fname,buf:S.buf});S.tab='s';tabs();renderList()}};
+$('#key').value=store.get('key','');
+async function loadList(){const key=$('#key').value.trim();store.set('key',key);try{
+ if(key){const j=await(await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${key}&sort=popularity`)).json();S.list=j.items.map(i=>({name:i.family,url:(i.files.regular||Object.values(i.files)[0]).replace('http:','https:')}))}
+ else{const j=await(await fetch('https://api.fontsource.org/v1/fonts')).json();S.list=j.filter(f=>f.type==='google').map(f=>({name:f.family,url:`https://cdn.jsdelivr.net/fontsource/fonts/${f.id}@latest/${f.defSubset||'latin'}-${f.weights.includes(400)?400:f.weights[0]}-normal.woff`}))}
+}catch(e){S.list=[]}renderList()}
+$('#key').onchange=loadList;$('#q').oninput=()=>renderList();
+const tabs=()=>document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;tabs();renderList()});
+async function renderList(){const q=$('#q').value.toLowerCase(),fav=store.get('fav',[]);let it;
+ if(S.tab==='s')it=(await idbOp('getAll')).map(s=>({...s,saved:1}));else if(S.tab==='f')it=fav;else it=S.list||[];
+ it=it.filter(i=>i.name.toLowerCase().includes(q)).slice(0,80);const el=$('#list');el.innerHTML='';
+ it.forEach(i=>{const r=document.createElement('div'),b=document.createElement('button'),x=document.createElement('button');r.className='row';b.textContent=i.name;
+  b.onclick=()=>(i.buf?Promise.resolve(useBuffer(i.buf,i.name)):useUrl(i.url,i.name)).catch(()=>alert('Falha ao carregar a fonte'));r.append(b);
+  if(i.saved){x.textContent='✕';x.onclick=async()=>{await idbOp('delete',i.name);renderList()}}
+  else{const on=fav.some(f=>f.name===i.name);x.textContent=on?'★':'☆';x.onclick=()=>{store.set('fav',on?fav.filter(f=>f.name!==i.name):[...fav,{name:i.name,url:i.url}]);renderList()}}
+  r.append(x);el.append(r)})}
+// layout → glifos
+function build(){const f=S.font;if(!f)return;const size=100,wrap=+$('#wrap').value||50,lh=(+$('#lh').value||100)/100,al=$('#al').value,lines=[];
+ $('#txt').value.split('\n').forEach(p=>{let c='';p.split(' ').forEach(w=>{if(c&&(c+' '+w).length>wrap){lines.push(c);c=w}else c=c?c+' '+w:w});lines.push(c)});
+ const sc=size/f.unitsPerEm,step=(f.ascender-f.descender)*sc*lh,asc=f.ascender*sc,pad=20,ws=lines.map(l=>f.getAdvanceWidth(l,size)),mw=Math.max(1,...ws),gl=[];
+ lines.forEach((l,li)=>{let x=pad+(al==='center'?(mw-ws[li])/2:al==='right'?mw-ws[li]:0);const y=pad+asc+li*step,g=f.stringToGlyphs(l);
+  g.forEach((gy,i)=>{const p=gy.getPath(x,y,size);if(p.commands.length){const b=p.getBoundingBox();gl.push({p,d:p.toPathData(2),cx:(b.x1+b.x2)/2,cy:(b.y1+b.y2)/2})}x+=gy.advanceWidth*sc;if(g[i+1])x+=f.getKerningValue(gy,g[i+1])*sc})});
+ S.m={gl,W:Math.ceil(mw+pad*2),H:Math.ceil(lines.length*step+pad*2)}}
+document.querySelectorAll('[data-b]').forEach(e=>e.oninput=build);
+// animação (fonte única para preview, GIF e Lottie)
+const ST={none:{},fade:{o:0},up:{o:0,y:60},down:{o:0,y:-60},zoom:{o:0,s:0},spin:{o:0,r:-180,s:.2}},ID={o:1,x:0,y:0,s:1,r:0};
+const st=n=>({...ID,...ST[n]}),mix=(a,b,p)=>{const r={};for(const k in ID)r[k]=a[k]+(b[k]-a[k])*p;return r};
+const params=()=>({a:$('#in').value,b:$('#out').value,l:$('#loop').value,i:+$('#ind').value,h:+$('#hold').value,o:+$('#outd').value,g:+$('#stg').value});
+const cyc=P=>Math.max(.1,(P.a==='none'?0:P.i)+P.h+(P.b==='none'?0:P.o));
+function pose(i,t,P){const iD=P.a==='none'?0:P.i,oD=P.b==='none'?0:P.o,T=cyc(P),c=((t-i*P.g)%T+T)%T;let q;
+ if(c<iD)q=mix(st(P.a),ID,E(c/iD));else if(c<T-oD)q={...ID};else q=mix(ID,st(P.b),E((c-T+oD)/oD));
+ const L=2*Math.PI*t/T+i*.4;if(P.l==='pulse')q.s*=1+.08*Math.sin(L);if(P.l==='float')q.y-=12*Math.sin(L);if(P.l==='wiggle')q.r+=6*Math.sin(L);if(P.l==='spin')q.r+=360*t/T;return q}
+const tf=(g,q)=>`opacity="${Math.max(0,Math.min(1,q.o)).toFixed(3)}" transform="translate(${(g.cx+q.x).toFixed(2)} ${(g.cy+q.y).toFixed(2)}) rotate(${q.r.toFixed(2)}) scale(${Math.max(q.s,.001).toFixed(3)}) translate(${-g.cx} ${-g.cy})"`;
+function svgStr(P,t){const {gl,W,H}=S.m,c=$('#col').value,fx=$('#fx').value,s=fx==='outline'?`fill="none" stroke="${c}" stroke-width="2"`:`fill="${c}"`,
+ d=fx==='shadow'?'<defs><filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="4" dy="4" stdDeviation="3" flood-opacity=".4"/></filter></defs>':'';
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${d}<g ${s}${fx==='shadow'?' filter="url(#s)"':''}>${gl.map((g,i)=>`<path d="${g.d}"${P?' '+tf(g,pose(i,t,P)):''}/>`).join('')}</g></svg>`}
+function loop(n){if(S.m){$('#view').innerHTML=svgStr(params(),n/1000);}requestAnimationFrame(loop)}
+// UI do preview
+document.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{$('#stage').className=b.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('on',x===b))});
+const zoom=d=>{S.z=Math.max(10,Math.min(400,S.z+d));$('#view').style.setProperty('--z',S.z);$('#zv').textContent=S.z+'%'};$('#zm').onclick=()=>zoom(-10);$('#zp').onclick=()=>zoom(10);
+$('#ss').onclick=()=>{const s=$('#src');s.style.display=s.style.display==='block'?'none':'block';const v=svgStr();s.value=v;$('#st').textContent=`${new Blob([v]).size} bytes`};
+// exportação
+const dl=(b,n)=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1e3)};
+const raster=sc=>new Promise(r=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=S.m.W*sc;c.height=S.m.H*sc;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c)};i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr())});
+const flat=c=>{const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d');x.fillStyle=$('#bg').value;x.fillRect(0,0,o.width,o.height);x.drawImage(c,0,0);return o};
+const blob=(c,t)=>new Promise(r=>c.toBlob(r,t,.95));
+function bmp(c){const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data,sz=54+w*h*4,v=new DataView(new ArrayBuffer(sz));
+ v.setUint16(0,0x424d);v.setUint32(2,sz,true);v.setUint32(10,54,true);v.setUint32(14,40,true);v.setInt32(18,w,true);v.setInt32(22,-h,true);v.setUint16(26,1,true);v.setUint16(28,32,true);v.setUint32(34,w*h*4,true);
+ for(let i=0,o=54;i<w*h;i++,o+=4){v.setUint8(o,d[i*4+2]);v.setUint8(o+1,d[i*4+1]);v.setUint8(o+2,d[i*4]);v.setUint8(o+3,d[i*4+3])}return new Blob([v.buffer],{type:'image/bmp'})}
+function frame(P,t){const {gl,W,H}=S.m,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),col=$('#col').value;x.fillStyle=$('#bg').value;x.fillRect(0,0,W,H);
+ gl.forEach((g,i)=>{const q=pose(i,t,P);x.save();x.globalAlpha=Math.max(0,Math.min(1,q.o));x.translate(g.cx+q.x,g.cy+q.y);x.rotate(q.r*Math.PI/180);x.scale(Math.max(q.s,.001),Math.max(q.s,.001));x.translate(-g.cx,-g.cy);
+  const p=new Path2D(g.d);if($('#fx').value==='outline'){x.strokeStyle=col;x.lineWidth=2;x.stroke(p)}else{x.fillStyle=col;x.fill(p)}x.restore()});return c}
+async function gif(){const P=params(),fps=+$('#fps').value||20,n=Math.round(cyc(P)*fps);$('#st').textContent='Gerando GIF…';
+ const w=await(await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js')).blob(),g=new GIF({workers:2,quality:5,width:S.m.W,height:S.m.H,workerScript:URL.createObjectURL(w)});
+ for(let k=0;k<n;k++)g.addFrame(frame(P,k/fps),{delay:1000/fps,copy:true});g.on('finished',b=>{dl(b,'text2svg.gif');$('#st').textContent='GIF pronto'});g.render()}
+function contours(cm){const out=[];let c=null,cur;const z=[0,0];
+ cm.forEach(m=>{if(m.type==='M'){c={v:[[m.x,m.y]],i:[z],o:[z],c:true};out.push(c);cur=[m.x,m.y]}
+  else if(m.type==='L'){c.v.push([m.x,m.y]);c.i.push(z);c.o.push(z);cur=[m.x,m.y]}
+  else if(m.type==='C'||m.type==='Q'){const a=m.type==='C'?[m.x1,m.y1]:[cur[0]+2/3*(m.x1-cur[0]),cur[1]+2/3*(m.y1-cur[1])],b=m.type==='C'?[m.x2,m.y2]:[m.x+2/3*(m.x1-m.x),m.y+2/3*(m.y1-m.y)];
+   c.o[c.o.length-1]=[a[0]-cur[0],a[1]-cur[1]];c.v.push([m.x,m.y]);c.i.push([b[0]-m.x,b[1]-m.y]);c.o.push(z);cur=[m.x,m.y]}
+  else if(m.type==='Z'&&c.v.length>1){const f=c.v[0],l=c.v[c.v.length-1];if(Math.abs(f[0]-l[0])<.01&&Math.abs(f[1]-l[1])<.01){c.i[0]=c.i[c.i.length-1];c.v.pop();c.i.pop();c.o.pop()}}});
+ return out.map(k=>({ty:'sh',ks:{a:0,k:k}}))}
+function lottie(){const P=params(),fr=30,n=Math.round(cyc(P)*fr),{gl,W,H}=S.m,h=$('#col').value,rgb=[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255),
+ kf=fn=>({a:1,k:Array.from({length:n+1},(_,f)=>({t:f,s:fn(f/fr),i:{x:1,y:1},o:{x:0,y:0}}))});
+ return {v:'5.7.0',fr,ip:0,op:n,w:W,h:H,nm:'Text2SVG',ddd:0,assets:[],layers:gl.map((g,i)=>({ddd:0,ind:i+1,ty:4,nm:'g'+i,sr:1,ip:0,op:n,st:0,bm:0,ao:0,
+  ks:{o:kf(t=>[Math.max(0,Math.min(1,pose(i,t,P).o))*100]),r:kf(t=>[pose(i,t,P).r]),p:kf(t=>{const q=pose(i,t,P);return[g.cx+q.x,g.cy+q.y,0]}),a:{a:0,k:[g.cx,g.cy,0]},s:kf(t=>{const s=pose(i,t,P).s*100;return[s,s,100]})},
+  shapes:[{ty:'gr',nm:'g',it:[...contours(g.p.commands),{ty:'fl',c:{a:0,k:[...rgb,1]},o:{a:0,k:100},r:1},{ty:'tr',p:{a:0,k:[0,0]},a:{a:0,k:[0,0]},s:{a:0,k:[100,100]},r:{a:0,k:0},o:{a:0,k:100},sk:{a:0,k:0},sa:{a:0,k:0}}]}]}))}}
+const react=(ts)=>svgStr().replace('<svg ','<svg {...props} ').replace(/stroke-width/g,'strokeWidth').replace(/flood-opacity/g,'floodOpacity').replace(/stdDeviation/g,'stdDeviation');
+document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=async()=>{if(!S.m)return;const k=b.dataset.ex;$('#st').textContent='';
+ if(k==='svg')dl(new Blob([svgStr()],{type:'image/svg+xml'}),'text2svg.svg');
+ else if(k==='png')dl(await blob(await raster(3),'image/png'),'text2svg.png');
+ else if(k==='jpeg')dl(await blob(flat(await raster(3)),'image/jpeg'),'text2svg.jpg');
+ else if(k==='webp')dl(await blob(await raster(3),'image/webp'),'text2svg.webp');
+ else if(k==='bmp')dl(bmp(await raster(3)),'text2svg.bmp');
+ else if(k==='jsx')dl(new Blob([`export default function Text2SVG(props) {\n  return (\n    ${react()}\n  );\n}\n`]),'Text2SVG.jsx');
+ else if(k==='tsx')dl(new Blob([`import type { SVGProps } from "react";\n\nexport default function Text2SVG(props: SVGProps<SVGSVGElement>) {\n  return (\n    ${react()}\n  );\n}\n`]),'Text2SVG.tsx');
+ else if(k==='lottie')dl(new Blob([JSON.stringify(lottie())],{type:'application/json'}),'text2svg.json');
+ else if(k==='gif')gif()});
+// início
+tabs();loadList();useUrl('https://cdn.jsdelivr.net/fontsource/fonts/roboto@latest/latin-400-normal.woff','Roboto').catch(()=>$('#fname').textContent='Envie uma fonte');requestAnimationFrame(loop);
+</script></body></html>
