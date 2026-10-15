@@ -1,7 +1,7 @@
 <img width="1516" height="590" alt="image" src="https://github.com/user-attachments/assets/ff29b0ed-e166-4c97-b67e-7f232337613f" />
 
 # Text2SVG
-Texto → SVG (index.html) e Código → SVG (code.html): texto e código-fonte em SVG, com fontes do Google/upload, animações in/out/loop e exportação (SVG, PNG, JPEG, WebP, BMP, JSX, TSX, Lottie, GIF).
+Texto → SVG (index.html) e Código → SVG (code.html), Texto → Caminhos (text2path.html): texto e código-fonte em SVG, com fontes do Google/upload, animações in/out/loop e exportação (SVG, PNG, JPEG, WebP, BMP, JSX, TSX, Lottie, GIF).
 
 ## Publicar
 ```

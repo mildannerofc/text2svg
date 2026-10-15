@@ -7,7 +7,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
 header{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--bd)}
 .logo{font-size:22px}.logo span{color:var(--ac)}
-main{display:grid;grid-template-columns:420px 1fr;gap:16px;padding:16px 24px;max-width:1500px;margin:auto}
+main>section{min-width:0}main{display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;padding:16px 24px;max-width:1500px;margin:auto}
 @media(max-width:900px){main{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
 h3{margin:0 0 8px;font-size:14px}
@@ -19,12 +19,12 @@ input[type=color]{width:100%;height:34px;padding:2px}input[type=number]{width:10
 .tabs,.r,.bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 #list{max-height:170px;overflow:auto;border:1px solid var(--bd);border-radius:6px}
 .row{display:flex}.row button{border:0;border-bottom:1px solid var(--bd);border-radius:0;background:none}.row button:first-child{flex:1;text-align:left}
-#stage{min-height:360px;border-radius:8px;overflow:auto;padding:16px;border:1px solid var(--bd)}
+#stage{height:min(60vh,520px);min-height:220px;border-radius:8px;overflow:auto;padding:16px;border:1px solid var(--bd)}
 #stage.grid{background:repeating-conic-gradient(#bbb 0 25%,#ddd 0 50%) 0 0/20px 20px}#stage.light{background:#fff}#stage.dark{background:#111}
-#view svg{width:calc(var(--z,100)*1%);height:auto;display:block;margin:auto}
+#view svg{width:calc(var(--w,100)*var(--z,100)/100*1px);max-width:none;height:auto;display:block;margin:auto}
 #src{width:100%;height:160px;margin-top:8px;display:none;font:12px monospace}#st{color:var(--mut);font-size:12px}
 </style></head><body>
-<header><div><b class="logo">Text<span>2</span>SVG</b> <a href="code.html" style="margin-left:16px;color:var(--ac);text-decoration:none">Código → SVG</a></div><select id="theme"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Escuro</option></select></header>
+<header><div><b class="logo">Text<span>2</span>SVG</b> <a href="code.html" style="margin-left:16px;color:var(--ac);text-decoration:none">Código → SVG</a> <a href="text2path.html" style="margin-left:16px;color:var(--ac);text-decoration:none">Texto → Caminhos</a></div><select id="theme"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Escuro</option></select></header>
 <main><section>
 <div class="card"><h3>Texto</h3><textarea id="txt" data-b>Digite seu texto aqui</textarea></div>
 <div class="card"><h3>Fonte: <span id="fname">carregando…</span></h3>
@@ -34,7 +34,7 @@ input[type=color]{width:100%;height:34px;padding:2px}input[type=number]{width:10
 <input id="key" placeholder="Chave da API do Google Fonts (opcional)"></div>
 <div class="card"><h3>Ajustes</h3><div class="g">
 <label>Cor<input type="color" id="col" value="#000000"></label><label>Fundo (GIF/JPEG)<input type="color" id="bg" value="#ffffff"></label>
-<label>Altura da linha %<input type="number" id="lh" value="100" data-b></label><label>Quebrar em (caracteres)<input type="number" id="wrap" value="50" data-b></label>
+<label>Altura da linha %<input type="number" id="lh" value="100" data-b></label><label>Quebrar em (caracteres)<input type="number" id="wrap" value="50" data-b></label><label>Tamanho da fonte (px)<input type="number" id="fsz" value="64" min="1" data-b></label>
 <label>Alinhamento<select id="al" data-b><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select></label>
 <label>Efeito<select id="fx"><option value="none">Nenhum</option><option value="shadow">Sombra</option><option value="outline">Contorno</option></select></label></div></div>
 <div class="card"><h3>Animação</h3><div class="g">
@@ -45,7 +45,7 @@ input[type=color]{width:100%;height:34px;padding:2px}input[type=number]{width:10
 <label>Duração in (s)<input type="number" id="ind" value="0.8" step="0.1"></label><label>Pausa (s)<input type="number" id="hold" value="1.5" step="0.1"></label>
 <label>Duração out (s)<input type="number" id="outd" value="0.8" step="0.1"></label><label>Atraso por letra (s)<input type="number" id="stg" value="0.08" step="0.02"></label></div></div>
 </section><section class="card">
-<div class="bar"><b style="flex:1">Pré-visualização</b><span id="bgs" class="tabs"><button data-bg="grid" class="on">Grade</button><button data-bg="light">Claro</button><button data-bg="dark">Escuro</button></span><button id="zm">−</button><span id="zv" style="align-self:center">100%</span><button id="zp">+</button><button id="ss">Código</button></div>
+<div class="bar"><b style="flex:1">Pré-visualização</b><span id="bgs" class="tabs"><button data-bg="grid" class="on">Grade</button><button data-bg="light">Claro</button><button data-bg="dark">Escuro</button></span><button id="zm">−</button><span id="zv" style="align-self:center">100%</span><button id="zp">+</button><button id="zf">Ajustar</button><button id="ss">Código</button></div>
 <div id="stage" class="grid"><div id="view"></div></div><textarea id="src" readonly></textarea>
 <div class="bar" id="ex"><button class="pri" data-ex="svg">SVG</button><button data-ex="png">PNG</button><button data-ex="jpeg">JPEG</button><button data-ex="webp">WebP</button><button data-ex="bmp">BMP</button><button data-ex="jsx">JSX</button><button data-ex="tsx">TSX</button><button data-ex="lottie">Lottie</button><button data-ex="gif">GIF</button></div><div id="st"></div>
 </section></main>
@@ -81,12 +81,12 @@ async function renderList(){const q=$('#q').value.toLowerCase(),fav=store.get('f
   else{const on=fav.some(f=>f.name===i.name);x.textContent=on?'★':'☆';x.onclick=()=>{store.set('fav',on?fav.filter(f=>f.name!==i.name):[...fav,{name:i.name,url:i.url}]);renderList()}}
   r.append(x);el.append(r)})}
 // layout → glifos
-function build(){const f=S.font;if(!f)return;const size=100,wrap=+$('#wrap').value||50,lh=(+$('#lh').value||100)/100,al=$('#al').value,lines=[];
+function build(){const f=S.font;if(!f)return;const size=Math.max(1,+$('#fsz').value||64),wrap=+$('#wrap').value||50,lh=(+$('#lh').value||100)/100,al=$('#al').value,lines=[];
  $('#txt').value.split('\n').forEach(p=>{let c='';p.split(' ').forEach(w=>{if(c&&(c+' '+w).length>wrap){lines.push(c);c=w}else c=c?c+' '+w:w});lines.push(c)});
  const sc=size/f.unitsPerEm,step=(f.ascender-f.descender)*sc*lh,asc=f.ascender*sc,pad=20,ws=lines.map(l=>f.getAdvanceWidth(l,size)),mw=Math.max(1,...ws),gl=[];
  lines.forEach((l,li)=>{let x=pad+(al==='center'?(mw-ws[li])/2:al==='right'?mw-ws[li]:0);const y=pad+asc+li*step,g=f.stringToGlyphs(l);
   g.forEach((gy,i)=>{const p=gy.getPath(x,y,size);if(p.commands.length){const b=p.getBoundingBox();gl.push({p,d:p.toPathData(2),cx:(b.x1+b.x2)/2,cy:(b.y1+b.y2)/2})}x+=gy.advanceWidth*sc;if(g[i+1])x+=f.getKerningValue(gy,g[i+1])*sc})});
- S.m={gl,W:Math.ceil(mw+pad*2),H:Math.ceil(lines.length*step+pad*2)}}
+ S.m={gl,W:Math.ceil(mw+pad*2),H:Math.ceil(lines.length*step+pad*2)};if(!S.fitted){S.fitted=1;fit()}}
 document.querySelectorAll('[data-b]').forEach(e=>e.oninput=build);
 // animação (fonte única para preview, GIF e Lottie)
 const ST={none:{},fade:{o:0},up:{o:0,y:60},down:{o:0,y:-60},zoom:{o:0,s:0},spin:{o:0,r:-180,s:.2}},ID={o:1,x:0,y:0,s:1,r:0};
@@ -100,10 +100,10 @@ const tf=(g,q)=>`opacity="${Math.max(0,Math.min(1,q.o)).toFixed(3)}" transform="
 function svgStr(P,t){const {gl,W,H}=S.m,c=$('#col').value,fx=$('#fx').value,s=fx==='outline'?`fill="none" stroke="${c}" stroke-width="2"`:`fill="${c}"`,
  d=fx==='shadow'?'<defs><filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="4" dy="4" stdDeviation="3" flood-opacity=".4"/></filter></defs>':'';
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${d}<g ${s}${fx==='shadow'?' filter="url(#s)"':''}>${gl.map((g,i)=>`<path d="${g.d}"${P?' '+tf(g,pose(i,t,P)):''}/>`).join('')}</g></svg>`}
-function loop(n){if(S.m){$('#view').innerHTML=svgStr(params(),n/1000);}requestAnimationFrame(loop)}
+function loop(n){if(S.m){$('#view').style.setProperty('--w',S.m.W);$('#view').innerHTML=svgStr(params(),n/1000);}requestAnimationFrame(loop)}
 // UI do preview
 document.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{$('#stage').className=b.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('on',x===b))});
-const zoom=d=>{S.z=Math.max(10,Math.min(400,S.z+d));$('#view').style.setProperty('--z',S.z);$('#zv').textContent=S.z+'%'};$('#zm').onclick=()=>zoom(-10);$('#zp').onclick=()=>zoom(10);
+const zoom=d=>{S.z=Math.max(10,Math.min(400,S.z+d));$('#view').style.setProperty('--z',S.z);$('#zv').textContent=S.z+'%'};const fit=()=>{if(S.m){S.z=100;zoom(Math.min(0,Math.floor(($('#stage').clientWidth-34)/S.m.W*100)-100))}};$('#zf').onclick=fit;$('#zm').onclick=()=>zoom(-10);$('#zp').onclick=()=>zoom(10);
 $('#ss').onclick=()=>{const s=$('#src');s.style.display=s.style.display==='block'?'none':'block';const v=svgStr();s.value=v;$('#st').textContent=`${new Blob([v]).size} bytes`};
 // exportação
 const dl=(b,n)=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1e3)};
