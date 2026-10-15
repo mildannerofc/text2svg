@@ -22,15 +22,16 @@ button.on{background:var(--ac);color:#fff;border-color:var(--ac)}.tabs{display:f
 <div class="tabs"><button id="t-svg" class="on">1. SVG + fonte de referência</button><button id="t-proj">2. Projeto Scratch (2.0 / 3.0)</button></div>
 <div id="drop" class="card"></div>
 <div class="card"><b>Fontes de referência:</b> <span id="fonts" class="mut">nenhuma</span>
-<div class="mut" style="font-size:12px;margin:6px 0">A posição de cada letra é medida pelo navegador usando a fonte importada; por isso ela precisa ser a mesma usada no SVG. No projeto Scratch, fontes dentro do arquivo são detectadas sozinhas.</div>
+<div class="mut" style="font-size:12px;margin:6px 0">No Scratch 2 o texto é posicionado só pela matriz <code>transform</code> (o <code>x</code>/<code>y</code> são ignorados); nos demais SVGs a posição de cada letra é medida pelo navegador. Nos dois casos a fonte importada precisa ser a mesma usada no SVG. No projeto Scratch, fontes dentro do arquivo são detectadas sozinhas.</div>
+<label>Interpretação do texto <select id="mode"><option value="auto">automática</option><option value="s2">Scratch 2 (Flash)</option><option value="std">SVG padrão (Scratch 3 / PenguinMod)</option></select></label> <label>Métrica vertical <select id="met"><option value="win">Windows (OS/2 win)</option><option value="hhea">hhea</option><option value="typo">OS/2 typo</option></select></label><br><br>
 <label>Agrupar por <select id="gran"><option value="w">palavra</option><option value="l">letra</option><option value="t">texto inteiro</option></select></label>
-&nbsp;<label>Ajuste X <input type="number" id="ox" value="0" step="0.5"></label> <label>Y <input type="number" id="oy" value="0" step="0.5"></label>
+&nbsp;<label title="em unidades do texto, antes da escala do Scratch">Ajuste X <input type="number" id="ox" value="0" step="0.5"></label> <label>Y <input type="number" id="oy" value="0" step="0.5"></label>
 &nbsp;<label><input type="checkbox" id="ov"> sobrepor prévia</label></div>
 <div class="card" id="fams" style="display:none"><b>Fontes detectadas nos arquivos</b><div id="famrows"></div></div>
 <div class="card" id="out" style="display:none"></div></main>
 <script>
 const $=s=>document.querySelector(s),F=[],Q=[],MAP={},NS='http://www.w3.org/2000/svg',store={get:(k,d)=>{try{return JSON.parse(localStorage[k])}catch{return d}},set:(k,v)=>localStorage[k]=JSON.stringify(v)};
-let tab='svg',uid=0,rid=0;
+let tab='svg',uid=0,rid=0,PREV=false;
 const mq=matchMedia('(prefers-color-scheme:dark)');function theme(){const p=store.get('theme','auto');$('#theme').value=p;document.documentElement.dataset.theme=p==='auto'?(mq.matches?'dark':'light'):p}
 $('#theme').onchange=e=>{store.set('theme',e.target.value);theme()};mq.onchange=theme;theme();
 const FONT=/\.(woff2?|ttf|otf)$/i,FILE=/\.(svg|sb2|sb3|pmp|sprite2|sprite3)$/i,norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,''),
@@ -56,13 +57,38 @@ function ser(n,d){const p='  '.repeat(d),at=[...n.attributes].map(a=>` ${a.name}
 function tidy(doc){const w=doc.createTreeWalker(doc,NodeFilter.SHOW_COMMENT),cs=[];while(w.nextNode())cs.push(w.currentNode);cs.forEach(c=>c.remove());
  [...doc.getElementsByTagName('*')].forEach(e=>{e.removeAttribute('xml:space');if(e.getAttribute('style')==='')e.removeAttribute('style')})}
 // ---- conversão: posição medida pelo navegador com a fonte de referência
-function normT(l){const hasEl=[...l.childNodes].some(x=>x.nodeType===1),ns=[],w=document.createTreeWalker(l,NodeFilter.SHOW_TEXT);while(w.nextNode())ns.push(w.currentNode);
+const keepWs=t=>{for(let e=t;e&&e.getAttribute;e=e.parentNode)if(e.getAttribute('xml:space')==='preserve')return true;return false};
+function normT(l,pres){if(pres){const w=document.createTreeWalker(l,NodeFilter.SHOW_TEXT);while(w.nextNode())w.currentNode.nodeValue=w.currentNode.nodeValue.replace(/[\r\n\t]/g,' ');return}const hasEl=[...l.childNodes].some(x=>x.nodeType===1),ns=[],w=document.createTreeWalker(l,NodeFilter.SHOW_TEXT);while(w.nextNode())ns.push(w.currentNode);
  ns.forEach(n=>{if(!n.nodeValue.trim()&&n.parentNode===l&&hasEl)n.remove();else n.nodeValue=n.nodeValue.replace(/\s+/g,' ')});
  const a=[],w2=document.createTreeWalker(l,NodeFilter.SHOW_TEXT);while(w2.nextNode())a.push(w2.currentNode);
  if(a.length){a[0].nodeValue=a[0].nodeValue.replace(/^ /,'');a[a.length-1].nodeValue=a[a.length-1].nodeValue.replace(/ $/,'')}}
 const faceFor=(e,l)=>{for(;e;e=e.parentNode){const v=e.style&&e.style.fontFamily;if(v)return F.find(x=>x.alias===v.replace(/["']/g,'')).font;if(e===l)break}return F[0].font};
+// ---- Scratch 2 (Flash): x/y do <text> são ignorados; a matriz posiciona o canto superior esquerdo do campo de texto (margem de 2px)
+const mul=(m,n)=>[m[0]*n[0]+m[2]*n[1],m[1]*n[0]+m[3]*n[1],m[0]*n[2]+m[2]*n[3],m[1]*n[2]+m[3]*n[3],m[0]*n[4]+m[2]*n[5]+m[4],m[1]*n[4]+m[3]*n[5]+m[5]];
+function parseTf(str){let M=[1,0,0,1,0,0];(str||'').replace(/(\w+)\s*\(([^)]*)\)/g,(_,f,a)=>{const v=a.trim().split(/[\s,]+/).map(Number);let n;
+ if(f==='matrix')n=v;else if(f==='translate')n=[1,0,0,1,v[0]||0,v[1]||0];else if(f==='scale')n=[v[0],0,0,v[1]??v[0],0,0];
+ else if(f==='rotate'){const r=(v[0]||0)*Math.PI/180,c=Math.cos(r),q=Math.sin(r);n=[c,q,-q,c,0,0];if(v.length>2)n=mul(mul([1,0,0,1,v[1],v[2]],n),[1,0,0,1,-v[1],-v[2]])}
+ else if(f==='skewX')n=[1,0,Math.tan(v[0]*Math.PI/180),1,0,0];else if(f==='skewY')n=[1,Math.tan(v[0]*Math.PI/180),0,1,0,0];
+ if(n&&n.length===6)M=mul(M,n);return''});return M}
+const place=(g,sc,px,py,M)=>g.path.transform(M[0]*sc,M[1]*sc,-M[2]*sc,-M[3]*sc,M[0]*px+M[2]*py+M[4],M[1]*px+M[3]*py+M[5]).toSVG();
+function metrics(face,sc){let o={};try{o=face['OS/2']||{}}catch(e){}const m=$('#met').value;let a,d;
+ if(m==='typo'&&o.typoAscender!=null){a=o.typoAscender;d=-o.typoDescender}else if(m==='win'&&o.winAscent){a=o.winAscent;d=o.winDescent}else{a=face.ascent;d=-face.descent}return{asc:a*sc,desc:d*sc}}
+function copyAttrs(t,el,keepTf){[...t.attributes].forEach(a=>{if(a.name==='style'){const s=a.value.split(';').filter(x=>x.trim()&&!/^\s*(font|text-anchor|letter-spacing|word-spacing|white-space)/.test(x)).join(';');if(s)el.setAttribute('style',s)}
+ else if(a.name==='id')return;else if(a.name==='transform'){if(keepTf)el.setAttribute('transform',a.value)}
+ else if(!/^(x|y|dx|dy|rotate|font-.*|text-anchor|xml:space|letter-spacing|word-spacing|textLength|lengthAdjust|dominant-baseline|alignment-baseline)$/.test(a.name))el.setAttribute(a.name,a.value)})}
+function legacyText(doc,t,E,k){const face=E.font,fs=num(prop(t,'font-size'))||22,sc=fs/face.unitsPerEm,{asc,desc}=metrics(face,sc),M=parseTf(t.getAttribute('transform')),ox=+$('#ox').value||0,oy=+$('#oy').value||0,gran=$('#gran').value,items=[];let wd='',d='';
+ const push=()=>{if(d)items.push({w:wd,d});wd='';d=''};
+ t.textContent.split(/\r\n|\r|\n/).forEach((ln,i)=>{let x=2+ox;const y=2+asc+i*(asc+desc)+oy;
+  face.glyphsForString(ln).forEach(g=>{const cp=g.codePoints&&g.codePoints[0],c=cp!=null?String.fromCodePoint(cp):'?';
+   if(/\s/.test(c)){if(gran==='w')push()}else if(g.path&&g.path.commands.length){const dd=fmt(place(g,sc,x,y,M));if(gran==='l')items.push({w:c,d:dd});else{wd+=c;d+=dd}}
+   x+=g.advanceWidth*sc});push()});
+ if(!items.length)return false;const id=t.getAttribute('id')||'texto-'+k;
+ items.forEach((it,j)=>{const p=doc.createElementNS(NS,'path');p.setAttribute('id',`${id}-${j+1}`);copyAttrs(t,p,false);p.setAttribute('aria-label',it.w);p.setAttribute('d',it.d);t.parentNode.insertBefore(p,t)});
+ t.remove();return{fs,asc,desc,E,ox,oy}}
+function prevLegacy(l,r){const lines=l.textContent.split(/\r\n|\r|\n/);l.textContent='';l.removeAttribute('y');l.setAttribute('x',2+r.ox);l.setAttribute('font-size',r.fs);l.removeAttribute('font-family');l.removeAttribute('text-anchor');l.style.fontFamily=`"${r.E.alias}"`;
+ lines.forEach((ln,i)=>{const s=document.createElementNS(NS,'tspan');s.setAttribute('x',2+r.ox);s.setAttribute('y',2+r.asc+i*(r.asc+r.desc)+r.oy);s.style.whiteSpace='pre';s.textContent=ln;l.append(s)})}
 function convText(doc,t,l,fi,k){const fam=famOf(t),m=pick(fam),E=m||F[0];fi.set(fam,{ok:!!m,name:E.name});
- normT(l);l.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');l.style.whiteSpace='pre';l.style.fontFamily=`"${E.alias}"`;
+ normT(l,keepWs(t));l.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve');l.style.whiteSpace='pre';l.style.fontFamily=`"${E.alias}"`;
  [l,...l.querySelectorAll('*')].forEach(e=>{e.style.fontWeight='normal';e.style.fontStyle='normal';if(e!==l){const f=own(e);if(f){const mm=pick(f),EE=mm||F[0];fi.set(f,{ok:!!mm,name:EE.name});e.style.fontFamily=`"${EE.alias}"`}}});
  const str=l.textContent,cnt=l.getNumberOfChars(),owners=[],w=document.createTreeWalker(l,NodeFilter.SHOW_TEXT);
  while(w.nextNode()){const nd=w.currentNode;for(let j=0;j<nd.nodeValue.length;j++)owners.push(nd.parentNode)}
@@ -73,15 +99,16 @@ function convText(doc,t,l,fi,k){const fam=famOf(t),m=pick(fam),E=m||F[0];fi.set(
    gl=fc.layout(ch).glyphs[0];if(!gl||!gl.path||!gl.path.commands.length)continue;
   const gd=fmt(gl.path.transform(sc*co,sc*si,sc*si,-sc*co,p.x+ox,p.y+oy).toSVG());if(gran==='l')items.push({w:ch,d:gd});else{wd+=ch;d+=gd}}
  push();if(!items.length)return false;
- const g=doc.createElementNS(NS,'g');[...t.attributes].forEach(a=>{if(a.name==='style'){const s=a.value.split(';').filter(x=>x.trim()&&!/^\s*(font|text-anchor|letter-spacing|word-spacing|white-space)/.test(x)).join(';');if(s)g.setAttribute('style',s)}
-  else if(!/^(x|y|dx|dy|rotate|font-.*|text-anchor|xml:space|letter-spacing|word-spacing|textLength|lengthAdjust|dominant-baseline|alignment-baseline)$/.test(a.name))g.setAttribute(a.name,a.value)});
- const id=t.getAttribute('id')||'texto-'+k;g.setAttribute('id',id);g.setAttribute('aria-label',str.trim());
+ const g=doc.createElementNS(NS,'g');copyAttrs(t,g,true);const id=t.getAttribute('id')||'texto-'+k;g.setAttribute('id',id);g.setAttribute('aria-label',str.trim());
  items.forEach((it,j)=>{const p=doc.createElementNS(NS,'path');p.setAttribute('id',`${id}-${j+1}`);p.setAttribute('d',it.d);g.appendChild(p)});
  t.parentNode.replaceChild(g,t);return true}
-async function conv(txt,fi){const doc=new DOMParser().parseFromString(txt,'image/svg+xml');if(doc.querySelector('parsererror'))throw new Error('SVG inválido');
- await embFonts(doc);const texts=[...doc.getElementsByTagNameNS(NS,'text')];let n=0,live=null;
+async function conv(txt,fi,hint){const doc=new DOMParser().parseFromString(txt,'image/svg+xml');if(doc.querySelector('parsererror'))throw new Error('SVG inválido');
+ await embFonts(doc);const texts=[...doc.getElementsByTagNameNS(NS,'text')],mode=$('#mode').value,cw=doc.createTreeWalker(doc,NodeFilter.SHOW_COMMENT);let sc2=false;while(cw.nextNode())if(/Exported by Scratch/i.test(cw.currentNode.nodeValue))sc2=true;
+ const legacy=mode==='s2'||(mode==='auto'&&(hint||sc2));fi.mode=legacy?'Scratch 2 (Flash)':'SVG padrão (Scratch 3 / PenguinMod)';let n=0,live=null;
  if(texts.length&&!F.length){texts.forEach(t=>fi.set(famOf(t),{ok:false,name:null}));return{svg:txt,n:0}}
- if(texts.length){live=document.importNode(doc.documentElement,true);const host=document.createElement('div');host.style.cssText='position:fixed;left:-99999px;top:0;width:2000px;height:2000px;visibility:hidden';host.append(live);document.body.append(host);
+ if(texts.length&&legacy){const cl=PREV?document.importNode(doc.documentElement,true):null,ct=cl?[...cl.getElementsByTagNameNS(NS,'text')]:[];
+  texts.forEach((t,i)=>{const fam=famOf(t),m=pick(fam),E=m||F[0];fi.set(fam,{ok:!!m,name:E.name});const r=legacyText(doc,t,E,i+1);if(r){n++;if(cl)prevLegacy(ct[i],r)}});live=cl}
+ else if(texts.length){live=document.importNode(doc.documentElement,true);const host=document.createElement('div');host.style.cssText='position:fixed;left:-99999px;top:0;width:2000px;height:2000px;visibility:hidden';host.append(live);document.body.append(host);
   try{const lt=[...live.getElementsByTagNameNS(NS,'text')];texts.forEach((t,i)=>{if(convText(doc,t,lt[i],fi,i+1))n++})}finally{host.remove()}}
  tidy(doc);return{svg:ser(doc.documentElement,0)+'\n',n,live}}
 // ---- projetos Scratch 2/3
@@ -89,8 +116,10 @@ async function project(file,fi){const z=await JSZip.loadAsync(file),jn=['project
  for(const n of Object.keys(z.files))if(FONT.test(n))try{await addFontBuf(await z.file(n).async('arraybuffer'),n.split('/').pop().replace(/\.\w+$/,''),'embutida no projeto')}catch(e){}chips();
  const j=JSON.parse(await z.file(jn).async('string')),cache={},old=new Set(),items=[];let total=0;
  (function w(o){if(o&&typeof o==='object'){if(typeof o.md5ext==='string'&&/\.svg$/i.test(o.md5ext))items.push({o,k:3});else if(typeof o.baseLayerMD5==='string'&&/\.svg$/i.test(o.baseLayerMD5))items.push({o,k:2});Object.values(o).forEach(w)}})(j);
+ const df=[];(function w(o,k){if(typeof o==='string'){const m=/^data:(?:font|application)\/[\w.+-]*;base64,([\s\S]+)$/.exec(o);if(m&&/font|woff|ttf|otf/i.test(o.slice(0,60)))df.push([k,m[1]])}else if(o&&typeof o==='object')Object.entries(o).forEach(([kk,v])=>w(v,(o.family||o.name||kk)+''))})(j,'fonte');
+ for(const [k,b] of df)try{await addFontBuf(Uint8Array.from(atob(b),c=>c.charCodeAt(0)).buffer,k,'embutida no projeto')}catch(e){}chips();
  for(const it of items){const o=it.o,name=it.k===3?o.md5ext:o.baseLayerID+'.svg',f=z.file(name);if(!f)continue;
-  if(!(name in cache)){const r=await conv(await f.async('string'),fi);total+=r.n;if(r.n){r.buf=new TextEncoder().encode(r.svg);r.md5=SparkMD5.ArrayBuffer.hash(r.buf.buffer)}cache[name]=r}
+  if(!(name in cache)){const r=await conv(await f.async('string'),fi,it.k===2||/\.(sb2|sprite2)$/i.test(file.name));total+=r.n;if(r.n){r.buf=new TextEncoder().encode(r.svg);r.md5=SparkMD5.ArrayBuffer.hash(r.buf.buffer)}cache[name]=r}
   const r=cache[name];if(!r.n)continue;const nn=r.md5+'.svg';
   if(it.k===3){o.assetId=r.md5;o.md5ext=nn;z.file(nn,r.buf);old.add(name)}else{o.baseLayerMD5=nn;z.file(name,r.buf)}}
  old.forEach(n=>z.remove(n));if(total)z.file(jn,JSON.stringify(j));
@@ -107,8 +136,8 @@ function famsUI(FI){$('#fams').style.display=FI.size?'block':'none';const t=$('#
 async function run(){const my=++rid;$('#out').innerHTML='';const FI=new Map(),files=Q.filter(f=>(f.name.split('.').pop().toLowerCase()==='svg')===(tab==='svg'));
  if(!files.length){$('#fams').style.display='none';$('#out').style.display='none';return}
  for(const f of files){if(my!==rid)return;const ext=f.name.split('.').pop().toLowerCase(),r=row(f.name,'processando…');
-  try{let blob,n,x;if(ext==='svg'){x=await conv(await f.text(),FI);n=x.n;blob=new Blob([x.svg],{type:'image/svg+xml'})}else({blob,n}=await project(f,FI));
-   r.querySelector('span').textContent=!F.length?'aguardando a fonte de referência':n?`${n} texto(s) convertido(s)`+(FI.warn?' — posição aproximada em '+FI.warn:''):'nenhum texto encontrado';
+  try{PREV=ext==='svg';let blob,n,x;if(ext==='svg'){x=await conv(await f.text(),FI);n=x.n;blob=new Blob([x.svg],{type:'image/svg+xml'})}else({blob,n}=await project(f,FI));
+   r.querySelector('span').textContent=!F.length?'aguardando a fonte de referência':n?`${n} texto(s) convertido(s)`+(FI.mode?' — modo: '+FI.mode:'')+(FI.warn?' — posição aproximada em '+FI.warn:''):'nenhum texto encontrado';
    if(n){const a=document.createElement('a');a.textContent='Baixar';a.href=URL.createObjectURL(blob);a.download=f.name.replace(/\.(\w+)$/,'-caminhos.$1');a.style.cssText='border:1px solid var(--bd);padding:6px 10px;border-radius:6px';r.append(a)}
    if(x&&x.live&&n)pv(r,x)}catch(e){r.querySelector('span').textContent='erro: '+e.message}}
  if(my===rid)famsUI(FI)}
@@ -116,7 +145,7 @@ async function add(fs){for(const f of fs){if(FONT.test(f.name))try{await addFont
 function setTab(t){tab=t;$('#t-svg').classList.toggle('on',t==='svg');$('#t-proj').classList.toggle('on',t==='proj');
  $('#drop').innerHTML=(t==='svg'?'Arraste aqui o <b>SVG</b> e a <b>fonte de referência</b> (WOFF2, TTF ou OTF)':'Arraste aqui o <b>projeto Scratch</b> (.sb2, .sb3, .pmp, .sprite2/3) e, se o projeto não trouxer, a <b>fonte de referência</b>')+'<br><label class="btn" style="display:inline-block;margin-top:10px">escolher arquivos<input type="file" id="fi" multiple hidden></label>';
  $('#fi').onchange=e=>{add([...e.target.files]);e.target.value=''};run()}
-$('#t-svg').onclick=()=>setTab('svg');$('#t-proj').onclick=()=>setTab('proj');['gran','ox','oy'].forEach(i=>$('#'+i).onchange=run);
+$('#t-svg').onclick=()=>setTab('svg');$('#t-proj').onclick=()=>setTab('proj');['gran','ox','oy','mode','met'].forEach(i=>$('#'+i).onchange=run);
 $('#ov').onchange=()=>document.querySelectorAll('.pv').forEach(p=>p.classList.toggle('ov',$('#ov').checked));
 const dz=$('#drop');['dragover','dragenter'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add('over')}));['dragleave','drop'].forEach(e=>dz.addEventListener(e,()=>dz.classList.remove('over')));
 dz.addEventListener('drop',ev=>{ev.preventDefault();add([...ev.dataTransfer.files])});addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>e.preventDefault());
